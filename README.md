@@ -1,6 +1,8 @@
 # DndSpellSearch
 A helper tool for DMs to have a place to search for spell data by class, level, or name 
 
+<img width="1680" alt="image" src="https://github.com/DavidWeaverAudio/DndSpellSearch/assets/78392269/07bdc476-0dc0-41cc-8130-69eb5b2b09d0">
+
 # Installation and Usage
 
 https://github.com/DavidWeaverAudio/DndSpellSearch/assets/78392269/61360869-4f4e-47ef-a634-23c4ccb595ab
