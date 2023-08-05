@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>DND Spell Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #form-container {
+            position: absolute;
+            right: 10%;
+
+            border-left: 1px solid black;
+            height: 100%;
+            background-color: white;
+
+        }
+
+        .form {
+            padding: 10px;
+        }
+
+        .form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #clear {
+            display: block;
+            margin-bottom: 10px;
+            z-index: 999;
+        }
+
+        button {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+        }
+
+        select {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+            width: 40%;
+        }
+
+        input {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+            width: 20%;
+        }
+
+        input[type="text"] {
+            width: 60%;
+        }
+
+        input[type="range"] {
+            width: 20%;
+            right: 20%;
+        }
+
+        #level {
+            position: absolute;
+            right: 20%;
+        }
+
+        #level-display {
+            position: absolute;
+            right: 20%;
+        }
+
+        button:hover {
+            cursor: pointer;
+        }
+
+        #result div {
+            border: 1px solid black;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        #autocomplete-list {
+                position: absolute;
+
+                border: 1px solid #d4d4d4;
+                border-bottom: none;
+                border-top: none;
+                z-index: 99;
+                top: 100%;
+                left: 0%;
+                right: 50%;
+            }
+            #autocomplete-list div {
+                padding: 10px;
+                cursor: pointer;
+                background-color: #fff; 
+                border-bottom: 1px solid #d4d4d4; 
+                right:50%;
+            }
+            #autocomplete-list div:hover {
+                background-color: #e9e9e9; 
+            }
+    </style>
+    <script>
+        function displaySpells(data) {
+            var resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            for (let [spellName, spellInfo] of Object.entries(data)) {
+                var spellDiv = document.createElement('div');
+                spellDiv.style.border = '1px solid black';
+                spellDiv.style.padding = '10px';
+                spellDiv.style.marginBottom = '10px';
+                spellDiv.style.backgroundColor = getSpellColor(spellInfo.level);
+                spellDiv.innerHTML = `
+            <h2>${spellName}</h2>
+            <p>Level: ${spellInfo.level}</p>
+            <p>School: ${spellInfo.school}</p>
+            <p>Description: ${spellInfo.description}</p>
+        `;
+                resultDiv.appendChild(spellDiv);
+            }
+        }
+
+        function getSpellColor(level) {
+            switch (level) {
+                case 0: return '#eee'; // light gray for level 0
+                case 1: return '#ddd'; // slightly darker gray for level 1
+                case 2: return '#ccc'; // and so on...
+                case 3: return '#bbb';
+                case 4: return '#aaa';
+                case 5: return '#999';
+                case 6: return '#888';
+                case 7: return '#777';
+                case 8: return '#666';
+                case 9: return '#555'; // darkest gray for level 9
+                default: return '#fff'; // white for any other level
+            }
+        }
+        function searchSpells(event) {
+            event.preventDefault(); 
+
+            const spellName = document.getElementById('spell_name').value;
+            if (!spellName) {
+                clearResults();
+                return;
+            }
+            const queryString = new URLSearchParams({ spell_name: spellName }).toString();
+            const requestUrl = '/api/spell?' + queryString;
+
+            fetch(requestUrl)
+                .then(response => response.json())
+                .then(data => {
+                    displaySpells(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching spell data:', error);
+                });
+        }
+        function returnAllSpells(event) {
+            event.preventDefault(); // Prevent the form from submitting and reloading the page
+
+            const level = document.getElementById('level').value;
+            const school = document.getElementById('school').value;
+
+            const queryString = new URLSearchParams({ level, school }).toString();
+            const requestUrl = '/api/specific-spell?' + queryString;
+
+            fetch(requestUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = '';
+
+                    if (Object.keys(data).length === 0) {
+                        resultDiv.innerHTML = '<p>No matching spells found.</p>';
+                        return;
+                    }
+
+                    for (const spellName in data) {
+                        const spell = data[spellName];
+                        const spellInfo = `
+                        <div>
+                            <h3>${spellName}</h3>
+                            <p>Description: ${spell['description']}</p>
+                            <p>Casting Requirements: ${spell['casting_requirements']}</p>
+                            <p>Level: ${spell['level']}</p>
+                            <p>School: ${spell['school']}</p>
+                        </div>
+                    `;
+                        resultDiv.innerHTML += spellInfo;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching spell data:', error);
+                });
+        }
+        function autocomplete(inp, spellArr) {
+                var currentFocus;
+                inp.addEventListener("input", function(e) {
+                    var a, b, i, val = this.value;
+                    closeAllLists();
+                    if (!val) { return false;}
+                    currentFocus = -1;
+                    a = document.createElement("DIV");
+                    a.setAttribute("id", this.id + "autocomplete-list");
+                    a.setAttribute("class", "autocomplete-items");
+                    this.parentNode.appendChild(a);
+                    for (i = 0; i < spellArr.length; i++) {
+                        if (spellArr[i].toUpperCase().includes(val.toUpperCase())) {
+                            b = document.createElement("DIV");
+                            b.innerHTML = "<strong>" + spellArr[i].substr(0, val.length) + "</strong>";
+                            b.innerHTML += spellArr[i].substr(val.length);
+                            b.innerHTML += "<input type='hidden' value='" + spellArr[i] + "'>";
+                            b.addEventListener("click", function(e) {
+                                inp.value = this.getElementsByTagName("input")[0].value;
+                                closeAllLists();
+                            });
+                            a.appendChild(b);
+                        }
+                    }
+                });
+
+                function closeAllLists(elmnt) {
+                    var x = document.getElementsByClassName("autocomplete-items");
+                    for (var i = 0; i < x.length; i++) {
+                        if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                        }
+                    }
+                }
+                document.addEventListener("click", function (e) {
+                    closeAllLists(e.target);
+                });
+            }
+
+            window.onload = function() {
+                fetch('/api/all-spells')
+                .then(response => response.json())
+                .then(data => {
+                    var spellNames = Object.keys(data);
+                    autocomplete(document.getElementById("spell_name"), spellNames);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+        }
+    </script>
+</head>
+
+<body>
+    
+    <h1>Search for a DND Spell</h1>
+    <button id="clear" onclick="clearResults()">Clear</button>
+    <form oninput="searchSpells(event)">
+        <label for="spell_name">Spell Name:</label>
+        <input type="text" id="spell_name" name="spell_name">
+        <input type="submit" value="Search">
+    </form>
+    <div id="result"></div>
+    </form>
+    <form onsubmit="returnAllSpells(event)">
+        <br>
+        <label for="level" id="level-label">Level:</label>
+        <input type="range" id="level" name="level" min="0" max="20" value="0">
+        <span id="level-display">0</span>
+
+        <br>
+        <label for="school">School:</label>
+        <select id="school" name="school">
+            <option value="">Any</option>
+            <option value="Abjuration">Abjuration</option>
+            <option value="Conjuration">Conjuration</option>
+            <option value="Divination">Divination</option>
+            <option value="Enchantment">Enchantment</option>
+            <option value="Evocation">Evocation</option>
+            <option value="Illusion">Illusion</option>
+            <option value="Necromancy">Necromancy</option>
+            <option value="Transmutation">Transmutation</option>
+        </select>
+        <br>
+        <input type="submit" value="Search">
+    </form>
+    <div id="result"></div>
+</body>
+<script>
+    document.getElementById('level').oninput = function () {
+        document.getElementById('level-display').textContent = this.value;
+    };
+</script>
+
+</html>
