@@ -17,6 +17,9 @@ def get_spell_info():
     spell_name = request.args.get('spell_name', None)
     level = request.args.get('level', None)
     school = request.args.get('school', None)
+    range = request.args.get('range', None)
+    casting_requirements = request.args.get('casting_requirements',None)
+    casting_time = request.args.get('casting_time', None)
 
     results = {}
     for name, data in DND_SKILLS_SPELLS.items():
