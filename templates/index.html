@@ -152,10 +152,12 @@
                 default: return '#fff'; // white for any other level
             }
         }
-        function searchSpells(event) {
-            event.preventDefault(); 
+        function searchSpells(event, specificSpell = null) {
+            if(event){
+                event.preventDefault(); 
+            }
 
-            const spellName = document.getElementById('spell_name').value;
+            const spellName = specificSpell || document.getElementById('spell_name').value;
             if (!spellName) {
                 clearResults();
                 return;
@@ -227,12 +229,13 @@
                             b.innerHTML = "<strong>" + spellArr[i].substr(0, val.length) + "</strong>";
                             b.innerHTML += spellArr[i].substr(val.length);
                             b.innerHTML += "<input type='hidden' value='" + spellArr[i] + "'>";
-                            b.addEventListener("click", function(e) {
+                        }
+                        b.addEventListener("click", function(e) {
                                 inp.value = this.getElementsByTagName("input")[0].value;
                                 closeAllLists();
+                                searchSpells(null, inp.value)
                             });
                             a.appendChild(b);
-                        }
                     }
                 });
 
