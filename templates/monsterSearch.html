@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>DND Monster Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #form-container {
+            position: absolute;
+            right: 10%;
+
+            border-left: 1px solid black;
+            height: 100%;
+            background-color: white;
+
+        }
+
+        .form {
+            padding: 10px;
+        }
+
+        .form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #clear {
+            display: block;
+            margin-bottom: 10px;
+            z-index: 999;
+        }
+
+        button {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+        }
+
+        select {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+            width: 40%;
+        }
+
+        input {
+            border: 1px solid black;
+
+            margin-bottom: 10px;
+            background: white;
+            position: absolute;
+            right: 20%;
+            width: 20%;
+        }
+
+        input[type="text"] {
+            width: 60%;
+        }
+
+        input[type="range"] {
+            width: 20%;
+            right: 20%;
+        }
+
+        #level {
+            position: absolute;
+            right: 20%;
+        }
+
+        #level-display {
+            position: absolute;
+            right: 20%;
+        }
+
+        button:hover {
+            cursor: pointer;
+        }
+
+        #result div {
+            border: 1px solid black;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        #autocomplete-list {
+            position: absolute;
+
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0%;
+            right: 50%;
+        }
+
+        #autocomplete-list div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+            right: 50%;
+        }
+
+        #autocomplete-list div:hover {
+            background-color: #e9e9e9;
+        }
+    </style>
+    <script>
+        function displayMonsters(data) {
+            var resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            for (let [monsterName, monsterInfo] of Object.entries(data)) {
+                var monsterDiv = document.createElement('div');
+                monsterDiv.style.border = '1px solid black';
+                monsterDiv.style.padding = '10px';
+                monsterDiv.style.marginBottom = '10px';
+                monsterDiv.innerHTML = `
+                <h2>${monsterName}</h2>
+                <p>Size: ${monsterInfo.size}</p>
+                <p>Type: ${monsterInfo.type}</p>
+                <p>Alignment: ${monsterInfo.alignment}</p>
+                <p>Armor Class: ${monsterInfo.armor_class[0].value}</p>
+                <p>Hit Points: ${monsterInfo.hit_points}</p>
+                <p>Hit Dice: ${monsterInfo.hit_dice}</p>
+                <p>Speed: Walk ${monsterInfo.speed.walk}, Swim ${monsterInfo.speed.swim}</p>
+                <p>Strength: ${monsterInfo.strength}</p>
+                <p>Dexterity: ${monsterInfo.dexterity}</p>
+                <p>Constitution: ${monsterInfo.constitution}</p>
+                <p>Intelligence: ${monsterInfo.intelligence}</p>
+                <p>Wisdom: ${monsterInfo.wisdom}</p>
+                <p>Charisma: ${monsterInfo.charisma}</p>
+                <p>Proficiencies: ${monsterInfo.proficiencies.map(prof => prof.proficiency.name).join(', ')}</p>
+                <p>Damage Vulnerabilities: ${monsterInfo.damage_vulnerabilities.join(', ')}</p>
+                <p>Damage Resistances: ${monsterInfo.damage_resistances.join(', ')}</p>
+                <p>Damage Immunities: ${monsterInfo.damage_immunities.join(', ')}</p>
+                <p>Condition Immunities: ${monsterInfo.condition_immunities.join(', ')}</p>
+                <p>Senses: ${monsterInfo.senses.darkvision}, Passive Perception ${monsterInfo.senses.passive_perception}</p>
+                <p>Languages: ${monsterInfo.languages}</p>
+                <p>Challenge Rating: ${monsterInfo.challenge_rating}</p>
+                <p>XP: ${monsterInfo.xp}</p>
+                <p>Special Abilities: ${monsterInfo.special_abilities.map(ability => ability.name).join(', ')}</p>
+                <p>Actions: ${monsterInfo.actions.map(action => action.name).join(', ')}</p>
+                <p>Legendary Actions: ${monsterInfo.legendary_actions.map(action => action.name).join(', ')}</p>
+                `;
+                resultDiv.appendChild(monsterDiv);
+            }
+        }
+
+        function searchMonsters(event, specificMonster = null) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            const monsterName = specificMonster || document.getElementById('monster_name').value;
+
+            if (!monsterName) {
+                clearResults();
+                return;
+            }
+            const queryString = new URLSearchParams({ monster_name: monsterName }).toString();
+            const requestUrl = '/api/monster?' + queryString;
+
+            fetch(requestUrl)
+                .then(response => response.json())
+                .then(data => {
+                    displayMonsters(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching monster data:', error);
+                });
+        }
+
+        function autocomplete(inp, monsterArr) {
+            var currentFocus;
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                this.parentNode.appendChild(a);
+                for (i = 0; i < monsterArr.length; i++) {
+                    if (monsterArr[i].toUpperCase().includes(val.toUpperCase())) {
+                        b = document.createElement("DIV");
+                        b.innerHTML = "<strong>" + monsterArr[i].substr(0, val.length) + "</strong>";
+                        b.innerHTML += monsterArr[i].substr(val.length);
+                        b.innerHTML += "<input type='hidden' value='" + monsterArr[i] + "'>";
+                        a.appendChild(b);
+                    }
+                    b.addEventListener("click", function (e) {
+                        inp.value = this.getElementsByTagName("input")[0].value;
+                        closeAllLists();
+                        searchMonsters(null, inp.value);
+                    });
+                }
+            });
+
+            function closeAllLists(elmnt) {
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+        window.onload = function () {
+            fetch('/api/all-monsters')
+                .then(response => response.json())
+                .then(data => {
+                    var monsterNames = Object.keys(data);
+                    autocomplete(document.getElementById("monster_name"), monsterNames);
+                })
+                .catch(error => console.error('Error:', error));
+
+            document.getElementById('monster_name').addEventListener('input', searchMonsters);
+        }
+
+
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Search for a DND Monster</h1>
+    <button id="clear" onclick="clearResults()">Clear</button>
+    <form>
+        <label for="monster_name">Monster Name:</label>
+        <input type="text" id="monster_name" name="monster_name">
+    </form>
+
+    <div id="result"></div>
+</body>
+
+</html>
